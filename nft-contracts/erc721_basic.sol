@@ -55,7 +55,7 @@ contract ERC721BASIC is ERC721, Ownable {
 
     // @dev Override the tokenURI function to return the URI for a specific token ID
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        require(_exists(tokenId) && tokenId >= 1 && tokenId <= MAX_SUPPLY, "Token doesn't exist.");
+        require(_exists(tokenId) && tokenId >= 1 && tokenId <= MAX_SUPPLY, "Token doesn't exist");
 
         // @dev Get the current base URI and concatenate it with the token ID and file extension to form the token URI
         string memory currentBaseURI = _baseURI();
@@ -65,15 +65,15 @@ contract ERC721BASIC is ERC721, Ownable {
     // @dev Function to mint NFTs
     function mint(uint256 amount) public payable {
         // @dev Ensure that minting is enabled and the transaction is from the original sender
-        require(mintingEnabled, "Mint deactivated.");
+        require(mintingEnabled, "Minting is currently disabled");
 
         // @dev Ensure that the correct amount of Ether is sent to purchase the NFTs
-        require(amount > 0, "Not enough amount.");
-        require(msg.value >= mintPrice * amount, "Insufficient funds.");
+        require(amount > 0, "Not enough amount");
+        require(msg.value >= mintPrice * amount, "Insufficient funds");
 
         // @dev Ensure that the maximum supply limit is not exceeded
         uint256 currentSupply = tokenIdCounter.current();
-        require(currentSupply + amount <= MAX_SUPPLY, "Max supply limit exceeded.");
+        require(currentSupply + amount <= MAX_SUPPLY, "Max supply limit exceeded");
 
         // @dev Emit the NFTMinted event
         emit NFTMinted(msg.sender, amount);
@@ -89,7 +89,7 @@ contract ERC721BASIC is ERC721, Ownable {
     function withdraw() public payable onlyOwner {
         // @dev Get the current contract balance and ensure that it is greater than 0
         uint256 balance = address(this).balance;
-        require(balance > 0, "Not enough balance.");
+        require(balance > 0, "Not enough balance");
 
         // @dev Transfer 50% of the contract balance to the team wallet and the other 50% to the community wallet
         (bool successTeamWallet, ) = payable(TEAM_WALLET).call{value: ((balance * 50) / 100)}("");
