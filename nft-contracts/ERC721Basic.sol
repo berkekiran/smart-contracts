@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-contract ERC721BASIC is ERC721, Ownable {
+contract ERC721Basic is ERC721, Ownable {
     // @dev Use Strings library for uint256 and Counters library for tokenIdCounter
     using Strings for uint256;
     using Counters for Counters.Counter;
