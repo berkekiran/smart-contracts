@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-contract ERC721BasicReveal is ERC721, Ownable {
+contract ERC721Advanced is ERC721, Ownable {
     // @dev Use Strings library for uint256 and Counters library for tokenIdCounter
     using Strings for uint256;
     using Counters for Counters.Counter;
@@ -36,6 +36,15 @@ contract ERC721BasicReveal is ERC721, Ownable {
     // @dev Set the maximum token supply
     uint256 public constant MAX_SUPPLY = 10000;
 
+    // @dev Set the maximum number of tokens that can be minted in a single transaction
+    uint256 public maxMintAmountPerTx = 100;
+
+    // @dev Set the maximum number of tokens that can be minted by a single address
+    uint256 public maxMintAmountPerAddress = 10;
+
+    // @dev Keep track of the number of tokens that have been minted by each address
+    mapping(address => uint256) addressMintAmount;
+
     // @dev Set the team wallet address
     address public constant TEAM_WALLET = 0x0000000000000000000000000000000000000000;
 
@@ -50,6 +59,12 @@ contract ERC721BasicReveal is ERC721, Ownable {
 
     // @dev Event that is emitted when the base URI for token metadata is changed
     event BaseURIChanged(string newBaseURI);
+
+    // @dev Event emitted when the maximum number of tokens that can be minted in a single transaction is changed
+    event MaxMintAmountPerTxChanged(uint256 amount);
+
+    // @dev Event emitted when the maximum number of tokens that can be minted by a single address is changed
+    event MaxMintAmountPerAddressChanged(uint256 amount);
 
     // @dev Event to notify when the mint price is updated
     event MintPriceUpdated(uint256 price);
@@ -92,11 +107,22 @@ contract ERC721BasicReveal is ERC721, Ownable {
         uint256 currentSupply = tokenIdCounter.current();
         require(currentSupply + amount <= MAX_SUPPLY, "Max supply limit exceeded");
 
+        // @dev Ensure that the maximum number of tokens that can be minted in a single transaction is not exceeded
+        require(amount <= maxMintAmountPerTx, "Max mint amount per transaction exceeded");
+
+        // @dev Ensure that the maximum number of tokens that can be minted by a single address is not exceeded
+        uint256 currentAddressMintAmount = addressMintAmount[msg.sender];
+        require(currentAddressMintAmount + amount <= maxMintAmountPerAddress, "Max mint amount per address exceeded");
+
         // @dev Emit the NFTMinted event
         emit NFTMinted(msg.sender, amount);
 
         // @dev Mint the specified number of NFTs and increment the token counter
         for (uint256 i = 0; i < amount; i++) {
+            // @dev Increment the number of tokens that have been minted by the address
+            addressMintAmount[msg.sender]++;
+
+            // @dev Increment the token counter and mint a new token
             tokenIdCounter.increment();
             _safeMint(msg.sender, tokenIdCounter.current());
         }
@@ -139,6 +165,20 @@ contract ERC721BasicReveal is ERC721, Ownable {
         baseURI = newBaseURI;
         
         emit BaseURIChanged(newBaseURI);
+    }
+
+    // @dev Function to set the maximum number of tokens that can be minted in a single transaction
+    function setMaxMintAmountPerTx(uint256 amount) public onlyOwner {
+        maxMintAmountPerTx = amount;
+
+        emit MaxMintAmountPerTxChanged(amount);
+    }
+
+    // @dev Function to set the maximum number of tokens that can be minted by a single address
+    function setMaxMintAmountPerAddress(uint256 amount) public onlyOwner {
+        maxMintAmountPerAddress = amount;
+
+        emit MaxMintAmountPerAddressChanged(amount);
     }
 
     // @dev Function to set the mint price
