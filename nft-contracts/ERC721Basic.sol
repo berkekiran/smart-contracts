@@ -45,6 +45,9 @@ contract ERC721Basic is ERC721, Ownable {
     // @dev Event emitted when NFTs are minted
     event NFTMinted(address indexed buyer, uint256 amount);
 
+    // @dev Event emitted when the contract balance is withdrawn
+    event Withdrawn(uint256 amount, address teamWallet, address communityWallet, address owner);
+
     // @dev Constructor that initializes the contract with a name and symbol for the NFT Collection
     constructor(string memory name, string memory symbol) ERC721(name, symbol) {}
 
@@ -90,6 +93,9 @@ contract ERC721Basic is ERC721, Ownable {
         // @dev Get the current contract balance and ensure that it is greater than 0
         uint256 balance = address(this).balance;
         require(balance > 0, "Not enough balance");
+
+        // @dev Emit the Withdrawn event
+        emit Withdrawn(balance, TEAM_WALLET, COMMUNITY_WALLET, msg.sender);
 
         // @dev Transfer 50% of the contract balance to the team wallet and the other 50% to the community wallet
         (bool successTeamWallet, ) = payable(TEAM_WALLET).call{value: ((balance * 50) / 100)}("");
