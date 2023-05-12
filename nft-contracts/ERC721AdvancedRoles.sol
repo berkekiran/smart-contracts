@@ -81,12 +81,13 @@ contract ERC721AdvancedRoles is ERC721, AccessControl {
     // @dev Event emitted when the contract balance is withdrawn
     event Withdrawn(uint256 amount, address teamWallet, address communityWallet, address owner);
 
-    // @dev Constructor that initializes the contract with a name and symbol for the NFT Collection
-    constructor(string memory name, string memory symbol) ERC721(name, symbol) {
+    // @dev Constructor that initializes the contract with a name and symbol for the NFT Collection and assigns admin and minter roles
+    constructor(string memory name, string memory symbol, address minter) ERC721(name, symbol) {
       _setRoleAdmin(ADMIN, ADMIN);
       _setRoleAdmin(MINTER, ADMIN);
       
       _grantRole(ADMIN, msg.sender);
+      _grantRole(MINTER, minter);
     }
 
     // @dev Override the _baseURI function to return the base URI
