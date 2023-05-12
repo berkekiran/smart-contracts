@@ -82,7 +82,7 @@ contract ERC721Basic is ERC721, Ownable {
         emit NFTMinted(msg.sender, amount);
 
         // @dev Mint the specified number of NFTs and increment the token counter
-        for (uint256 i = 0; i < amount; i++) {
+        for(uint256 i = 0; i < amount; i++) {
             tokenIdCounter.increment();
             _safeMint(msg.sender, tokenIdCounter.current());
         }
@@ -128,7 +128,7 @@ contract ERC721Basic is ERC721, Ownable {
         uint256 tokenCount = balanceOf(owner);
 
         // @dev If the token count is 0, return an empty array.
-        if (tokenCount == 0) {
+        if(tokenCount == 0) {
             return new uint256[](0);
         } else {
             // @dev Initialize an array to store the token IDs and a variable to keep track of the index
@@ -136,10 +136,10 @@ contract ERC721Basic is ERC721, Ownable {
             uint256 index = 0;
 
             // @dev Iterate through the range of token IDs and check if the current ID is owned by the given address
-            for (uint256 tokenId = startId; tokenId < endId; tokenId++) {
-                if (index == tokenCount) break;
+            for(uint256 tokenId = startId; tokenId < endId; tokenId++) {
+                if(index == tokenCount) break;
 
-                if (ownerOf(tokenId) == owner) {
+                if(ownerOf(tokenId) == owner) {
                     result[index] = tokenId;
                     index++;
                 }

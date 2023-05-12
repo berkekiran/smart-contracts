@@ -9,8 +9,9 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-contract ERC721BasicReveal is ERC721, Ownable {
+contract ERC721AdvancedWhitelist is ERC721, Ownable {
     // @dev Use Strings library for uint256 and Counters library for tokenIdCounter
     using Strings for uint256;
     using Counters for Counters.Counter;
@@ -30,11 +31,26 @@ contract ERC721BasicReveal is ERC721, Ownable {
     // @dev Enable/disable minting
     bool public mintingEnabled = false;
 
+    // @dev Enable/disable whitelist minting
+    bool public whitelistMintingEnabled = false;
+
     // @dev Reveal/hide NFTs
     bool public nftsRevealed = false;
 
     // @dev Set the maximum token supply
     uint256 public constant MAX_SUPPLY = 10000;
+
+    // @dev Set the maximum number of tokens that can be minted in a single transaction
+    uint256 public maxMintAmountPerTx = 100;
+
+    // @dev Set the maximum number of tokens that can be minted by a single address
+    uint256 public maxMintAmountPerAddress = 10;
+
+    // @dev Keep track of the number of tokens that have been minted by each address
+    mapping(address => uint256) private addressMintAmount;
+
+    // @dev A cryptographic hash computed from a list of data, used to verify address eligibility for minting
+    bytes32 public merkleRoot;
 
     // @dev Set the team wallet address
     address public constant TEAM_WALLET = 0x0000000000000000000000000000000000000000;
@@ -45,11 +61,23 @@ contract ERC721BasicReveal is ERC721, Ownable {
     // @dev Event to notify when minting is enabled/disabled
     event MintingEnabled(bool enabled);
 
+    // @dev Event to notify when whitelist minting is enabled/disabled
+    event WhitelistMintingEnabled(bool enabled);
+
     // @dev Event that is emitted when the visibility of the NFTs is changed
     event NFTVisibilityChanged(bool revealed);
 
     // @dev Event that is emitted when the base URI for token metadata is changed
     event BaseURIChanged(string newBaseURI);
+
+    // @dev Event emitted when the maximum number of tokens that can be minted in a single transaction is changed
+    event MaxMintAmountPerTxChanged(uint256 amount);
+
+    // @dev Event emitted when the maximum number of tokens that can be minted by a single address is changed
+    event MaxMintAmountPerAddressChanged(uint256 amount);
+
+    // @dev Event emitted when the merkle root is set
+    event MerkleRootChanged(bytes32 merkleRoot);
 
     // @dev Event to notify when the mint price is updated
     event MintPriceUpdated(uint256 price);
@@ -61,7 +89,9 @@ contract ERC721BasicReveal is ERC721, Ownable {
     event Withdrawn(uint256 amount, address teamWallet, address communityWallet, address owner);
 
     // @dev Constructor that initializes the contract with a name and symbol for the NFT Collection
-    constructor(string memory name, string memory symbol) ERC721(name, symbol) {}
+    constructor(string memory name, string memory symbol, bytes32 initialMerkleRoot) ERC721(name, symbol) {
+        merkleRoot = initialMerkleRoot;
+    }
 
     // @dev Override the _baseURI function to return the base URI
     function _baseURI() internal view override returns (string memory) {
@@ -82,24 +112,48 @@ contract ERC721BasicReveal is ERC721, Ownable {
         return bytes(currentBaseURI).length > 0 ? string(abi.encodePacked(currentBaseURI, tokenId.toString(), ".json")) : "";
     }
 
+    function leaf(address newAddress) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(newAddress));
+    }
+
+    function verify(bytes32 newLeaf, bytes32[] memory newMerkleProof) internal view returns (bool) {
+        return MerkleProof.verify(newMerkleProof, merkleRoot, newLeaf);
+    }
+
     // @dev Function to mint NFTs
-    function mint(uint256 amount) public payable {
+    function mint(uint256 amount, bytes32[] calldata merkleProof) public payable {
         // @dev Ensure that minting is enabled and the transaction is from the original sender
         require(mintingEnabled, "Minting is currently disabled");
-
+        
         // @dev Ensure that the correct amount of Ether is sent to purchase the NFTs
         require(amount > 0, "Not enough amount");
         require(msg.value >= mintPrice * amount, "Insufficient funds");
 
+        // @dev Verify address eligibility using merkle proof if whitelist minting is enabled
+        if(whitelistMintingEnabled) {
+            require(verify(leaf(msg.sender), merkleProof), "Address is not in the whitelist or wrong merkle proof");
+        }
+
         // @dev Ensure that the maximum supply limit is not exceeded
         uint256 currentSupply = tokenIdCounter.current();
         require(currentSupply + amount <= MAX_SUPPLY, "Max supply limit exceeded");
+
+        // @dev Ensure that the maximum number of tokens that can be minted in a single transaction is not exceeded
+        require(amount <= maxMintAmountPerTx, "Max mint amount per transaction exceeded");
+
+        // @dev Ensure that the maximum number of tokens that can be minted by a single address is not exceeded
+        uint256 currentAddressMintAmount = addressMintAmount[msg.sender];
+        require(currentAddressMintAmount + amount <= maxMintAmountPerAddress, "Max mint amount per address exceeded");
 
         // @dev Emit the NFTMinted event
         emit NFTMinted(msg.sender, amount);
 
         // @dev Mint the specified number of NFTs and increment the token counter
         for(uint256 i = 0; i < amount; i++) {
+            // @dev Increment the number of tokens that have been minted by the address
+            addressMintAmount[msg.sender]++;
+
+            // @dev Increment the token counter and mint a new token
             tokenIdCounter.increment();
             _safeMint(msg.sender, tokenIdCounter.current());
         }
@@ -133,6 +187,13 @@ contract ERC721BasicReveal is ERC721, Ownable {
         emit MintingEnabled(enabled);
     }
 
+    // @dev Function to set the whitelist minting enabled status
+    function setWhitelistMintingEnabled(bool enabled) public onlyOwner {
+        whitelistMintingEnabled = enabled;
+        
+        emit WhitelistMintingEnabled(enabled);
+    }
+
     // @dev Function to reveal or hide the NFTs
     function setNFTVisibility(bool revealed) public onlyOwner {
         nftsRevealed = revealed;
@@ -147,6 +208,27 @@ contract ERC721BasicReveal is ERC721, Ownable {
         emit BaseURIChanged(newBaseURI);
     }
 
+    // @dev Function to set the maximum number of tokens that can be minted in a single transaction
+    function setMaxMintAmountPerTx(uint256 amount) public onlyOwner {
+        maxMintAmountPerTx = amount;
+
+        emit MaxMintAmountPerTxChanged(amount);
+    }
+
+    // @dev Function to set the maximum number of tokens that can be minted by a single address
+    function setMaxMintAmountPerAddress(uint256 amount) public onlyOwner {
+        maxMintAmountPerAddress = amount;
+
+        emit MaxMintAmountPerAddressChanged(amount);
+    }
+
+    // @dev Function to set the merkle root
+    function setMerkleRoot(bytes32 newMerkleRoot) public onlyOwner {
+        merkleRoot = newMerkleRoot;
+        
+        emit MerkleRootChanged(newMerkleRoot);
+    }
+
     // @dev Function to set the mint price
     function setMintPrice(uint256 price) public onlyOwner {
         mintPrice = price;
@@ -158,7 +240,7 @@ contract ERC721BasicReveal is ERC721, Ownable {
     function tokensOfOwner(address owner, uint startId, uint endId) external view returns(uint256[] memory) {
         uint256 tokenCount = balanceOf(owner);
 
-        // @dev If the token count is 0, return an empty array.
+        // @dev If the token count is 0, return an empty array
         if(tokenCount == 0) {
             return new uint256[](0);
         } else {
