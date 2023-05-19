@@ -4,12 +4,13 @@ pragma solidity 0.8.18;
 
 // @dev: Berke Kiran - berkekiran.com - twitter.com/berkekiraneth
 
-// @dev Import ERC1155, Ownable, and Strings from OpenZeppelin contracts
+// @dev Import ERC1155, Ownable, MerkleProof, and Strings from OpenZeppelin contracts
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-contract ERC1155BasicReveal is ERC1155, Ownable {
+contract ERC1155AdvancedWhitelist is ERC1155, Ownable {
     // @dev Use Strings library for uint256
     using Strings for uint256;
     
@@ -34,6 +35,9 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
     // @dev Enable/disable minting
     bool[3] public mintingEnabled = [false, false, false];
 
+    // @dev Enable/disable whitelist minting
+    bool[3] public whitelistMintingEnabled = [false, false, false];
+
     // @dev Reveal/hide NFTs
     bool public nftsRevealed = false;
 
@@ -42,6 +46,18 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
 
     // @dev Set the total token supplies
     uint256[3] private tokenSupplies = [0, 0, 0];
+
+    // @dev Set the maximum number of tokens that can be minted in a single transaction
+    uint256[3] public maxMintAmountPerTx = [100, 100, 100];
+
+    // @dev Set the maximum number of tokens that can be minted by a single address
+    uint256[3] public maxMintAmountPerAddress = [10, 10, 10];
+
+    // @dev Keep track of the number of tokens that have been minted by each address
+    mapping(address => mapping(uint256 => uint256)) private addressMintAmount;
+
+    // @dev A cryptographic hash computed from a list of data, used to verify address eligibility for minting
+    bytes32 public merkleRoot;
 
     // @dev Set the team wallet address
     address public constant TEAM_WALLET = 0x0000000000000000000000000000000000000000;
@@ -52,11 +68,23 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
     // @dev Event to notify when minting is enabled/disabled
     event MintingEnabled(uint256 tokenId, bool enabled);
 
+    // @dev Event to notify when whitelist minting is enabled/disabled
+    event WhitelistMintingEnabled(uint256 tokenId, bool enabled);
+
     // @dev Event that is emitted when the visibility of the NFTs is changed
     event NFTVisibilityChanged(bool revealed);
 
     // @dev Event that is emitted when the base URI for token metadata is changed
     event BaseURIChanged(string newBaseURI);
+
+    // @dev Event emitted when the maximum number of tokens that can be minted in a single transaction is changed
+    event MaxMintAmountPerTxChanged(uint256 tokenId, uint256 amount);
+
+    // @dev Event emitted when the maximum number of tokens that can be minted by a single address is changed
+    event MaxMintAmountPerAddressChanged(uint256 tokenId, uint256 amount);
+
+    // @dev Event emitted when the merkle root is set
+    event MerkleRootChanged(bytes32 merkleRoot);
 
     // @dev Event to notify when the mint price is updated
     event MintPriceUpdated(uint256 tokenId, uint256 price);
@@ -68,7 +96,9 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
     event Withdrawn(uint256 amount, address teamWallet, address communityWallet, address owner);
 
     // @dev Constructor that initializes the contract
-    constructor() ERC1155(CONSTRUCTOR_URI) {}
+    constructor(bytes32 initialMerkleRoot) ERC1155(CONSTRUCTOR_URI) {
+        merkleRoot = initialMerkleRoot;
+    }
 
     // @dev Override the uri function to return the URI for a specific token ID
     function uri(uint256 tokenId) public view virtual override returns (string memory) {
@@ -83,8 +113,16 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
         return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString(), ".json")) : "";
     }
 
+    function leaf(address newAddress) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(newAddress));
+    }
+
+    function verify(bytes32 newLeaf, bytes32[] memory newMerkleProof) internal view returns (bool) {
+        return MerkleProof.verify(newMerkleProof, merkleRoot, newLeaf);
+    }
+
     // @dev Function to mint NFTs
-    function mint(uint256 tokenId, uint256 amount) public payable {
+    function mint(uint256 tokenId, uint256 amount, bytes32[] calldata merkleProof) public payable {
         // Ensure that the tokenId is within the valid range
         require(tokenId > 0 && tokenId <= maxSupplies.length, "Token doesn't exist");
 
@@ -98,12 +136,27 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
         require(amount > 0, "Not enough amount");
         require(msg.value >= mintPrices[currentTokenId] * amount, "Insufficient funds");
 
+        // @dev Verify address eligibility using merkle proof if whitelist minting is enabled
+        if(whitelistMintingEnabled[currentTokenId]) {
+            require(verify(leaf(msg.sender), merkleProof), "Address is not in the whitelist or wrong merkle proof");
+        }
+
         // @dev Ensure that the maximum supply limit is not exceeded
         uint256 currentSupply = tokenSupplies[currentTokenId];
         require(currentSupply + amount <= maxSupplies[currentTokenId], "Max supply limit exceeded");
 
+        // @dev Ensure that the maximum number of tokens that can be minted in a single transaction is not exceeded
+        require(amount <= maxMintAmountPerTx[currentTokenId], "Max mint amount per transaction exceeded");
+
+        // @dev Ensure that the maximum number of tokens that can be minted by a single address is not exceeded
+        uint256 currentAddressMintAmount = addressMintAmount[msg.sender][currentTokenId];
+        require(currentAddressMintAmount + amount <= maxMintAmountPerAddress[currentTokenId], "Max mint amount per address exceeded");
+
         // @dev Emit the NFTMinted event
         emit NFTMinted(tokenId, msg.sender, amount);
+
+        // @dev Increment the number of tokens that have been minted by the address
+        addressMintAmount[msg.sender][currentTokenId]++;
 
         // @dev Mint the specified number of NFTs
         tokenSupplies[currentTokenId]++;
@@ -144,6 +197,19 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
         emit MintingEnabled(tokenId, enabled);
     }
 
+    // @dev Function to set the whitelist minting enabled status
+    function setWhitelistMintingEnabled(uint256 tokenId, bool enabled) public onlyOwner {
+        // Ensure that the tokenId is within the valid range
+        require(tokenId > 0 && tokenId <= maxSupplies.length, "Token doesn't exist");
+
+        // Subtract 1 from the tokenId to convert it to the index in the maxSupplies array
+        uint256 currentTokenId = tokenId - 1;
+
+        whitelistMintingEnabled[currentTokenId] = enabled;
+        
+        emit WhitelistMintingEnabled(tokenId, enabled);
+    }
+
     // @dev Function to reveal or hide the NFTs
     function setNFTVisibility(bool revealed) public onlyOwner {
         nftsRevealed = revealed;
@@ -156,6 +222,39 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
         baseURI = newBaseURI;
         
         emit BaseURIChanged(newBaseURI);
+    }
+
+    // @dev Function to set the maximum number of tokens that can be minted in a single transaction
+    function setMaxMintAmountPerTx(uint256 tokenId, uint256 amount) public onlyOwner {
+        // Ensure that the tokenId is within the valid range
+        require(tokenId > 0 && tokenId <= maxSupplies.length, "Token doesn't exist");
+
+        // Subtract 1 from the tokenId to convert it to the index in the maxSupplies array
+        uint256 currentTokenId = tokenId - 1;
+
+        maxMintAmountPerTx[currentTokenId] = amount;
+
+        emit MaxMintAmountPerTxChanged(tokenId, amount);
+    }
+
+    // @dev Function to set the maximum number of tokens that can be minted by a single address
+    function setMaxMintAmountPerAddress(uint256 tokenId, uint256 amount) public onlyOwner {
+        // Ensure that the tokenId is within the valid range
+        require(tokenId > 0 && tokenId <= maxSupplies.length, "Token doesn't exist");
+
+        // Subtract 1 from the tokenId to convert it to the index in the maxSupplies array
+        uint256 currentTokenId = tokenId - 1;
+
+        maxMintAmountPerAddress[currentTokenId] = amount;
+
+        emit MaxMintAmountPerAddressChanged(tokenId, amount);
+    }
+
+    // @dev Function to set the merkle root
+    function setMerkleRoot(bytes32 newMerkleRoot) public onlyOwner {
+        merkleRoot = newMerkleRoot;
+        
+        emit MerkleRootChanged(newMerkleRoot);
     }
 
     // @dev Function to set the mint price

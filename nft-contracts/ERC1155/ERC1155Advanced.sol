@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-contract ERC1155BasicReveal is ERC1155, Ownable {
+contract ERC1155Advanced is ERC1155, Ownable {
     // @dev Use Strings library for uint256
     using Strings for uint256;
     
@@ -43,6 +43,15 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
     // @dev Set the total token supplies
     uint256[3] private tokenSupplies = [0, 0, 0];
 
+    // @dev Set the maximum number of tokens that can be minted in a single transaction
+    uint256[3] public maxMintAmountPerTx = [100, 100, 100];
+
+    // @dev Set the maximum number of tokens that can be minted by a single address
+    uint256[3] public maxMintAmountPerAddress = [10, 10, 10];
+
+    // @dev Keep track of the number of tokens that have been minted by each address
+    mapping(address => mapping(uint256 => uint256)) private addressMintAmount;
+
     // @dev Set the team wallet address
     address public constant TEAM_WALLET = 0x0000000000000000000000000000000000000000;
 
@@ -57,6 +66,12 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
 
     // @dev Event that is emitted when the base URI for token metadata is changed
     event BaseURIChanged(string newBaseURI);
+
+    // @dev Event emitted when the maximum number of tokens that can be minted in a single transaction is changed
+    event MaxMintAmountPerTxChanged(uint256 tokenId, uint256 amount);
+
+    // @dev Event emitted when the maximum number of tokens that can be minted by a single address is changed
+    event MaxMintAmountPerAddressChanged(uint256 tokenId, uint256 amount);
 
     // @dev Event to notify when the mint price is updated
     event MintPriceUpdated(uint256 tokenId, uint256 price);
@@ -102,8 +117,18 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
         uint256 currentSupply = tokenSupplies[currentTokenId];
         require(currentSupply + amount <= maxSupplies[currentTokenId], "Max supply limit exceeded");
 
+        // @dev Ensure that the maximum number of tokens that can be minted in a single transaction is not exceeded
+        require(amount <= maxMintAmountPerTx[currentTokenId], "Max mint amount per transaction exceeded");
+
+        // @dev Ensure that the maximum number of tokens that can be minted by a single address is not exceeded
+        uint256 currentAddressMintAmount = addressMintAmount[msg.sender][currentTokenId];
+        require(currentAddressMintAmount + amount <= maxMintAmountPerAddress[currentTokenId], "Max mint amount per address exceeded");
+
         // @dev Emit the NFTMinted event
         emit NFTMinted(tokenId, msg.sender, amount);
+
+        // @dev Increment the number of tokens that have been minted by the address
+        addressMintAmount[msg.sender][currentTokenId]++;
 
         // @dev Mint the specified number of NFTs
         tokenSupplies[currentTokenId]++;
@@ -156,6 +181,32 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
         baseURI = newBaseURI;
         
         emit BaseURIChanged(newBaseURI);
+    }
+
+    // @dev Function to set the maximum number of tokens that can be minted in a single transaction
+    function setMaxMintAmountPerTx(uint256 tokenId, uint256 amount) public onlyOwner {
+        // Ensure that the tokenId is within the valid range
+        require(tokenId > 0 && tokenId <= maxSupplies.length, "Token doesn't exist");
+
+        // Subtract 1 from the tokenId to convert it to the index in the maxSupplies array
+        uint256 currentTokenId = tokenId - 1;
+
+        maxMintAmountPerTx[currentTokenId] = amount;
+
+        emit MaxMintAmountPerTxChanged(tokenId, amount);
+    }
+
+    // @dev Function to set the maximum number of tokens that can be minted by a single address
+    function setMaxMintAmountPerAddress(uint256 tokenId, uint256 amount) public onlyOwner {
+        // Ensure that the tokenId is within the valid range
+        require(tokenId > 0 && tokenId <= maxSupplies.length, "Token doesn't exist");
+
+        // Subtract 1 from the tokenId to convert it to the index in the maxSupplies array
+        uint256 currentTokenId = tokenId - 1;
+
+        maxMintAmountPerAddress[currentTokenId] = amount;
+
+        emit MaxMintAmountPerAddressChanged(tokenId, amount);
     }
 
     // @dev Function to set the mint price

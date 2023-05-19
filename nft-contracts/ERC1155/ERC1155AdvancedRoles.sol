@@ -4,12 +4,13 @@ pragma solidity 0.8.18;
 
 // @dev: Berke Kiran - berkekiran.com - twitter.com/berkekiraneth
 
-// @dev Import ERC1155, Ownable, and Strings from OpenZeppelin contracts
+// @dev Import ERC1155, Access Control, and Strings from OpenZeppelin contracts
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract ERC1155BasicReveal is ERC1155, Ownable {
+contract ERC1155AdvancedRoles is ERC1155, AccessControl {
     // @dev Use Strings library for uint256
     using Strings for uint256;
     
@@ -18,6 +19,12 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
 
     // @dev The symbol representing the NFT
     string public constant symbol = "NFTSymbol";
+
+    // @dev Declare a constant variable for the admin role using the keccak256 hash function
+    bytes32 public constant ADMIN = keccak256("ADMIN");
+
+    // @dev Declare a constant variable for the minter role using the keccak256 hash function
+    bytes32 public constant MINTER = keccak256("MINTER");
     
     // @dev Define the base URI for token metadata
     string public baseURI = "ipfs://.../"; 
@@ -43,6 +50,15 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
     // @dev Set the total token supplies
     uint256[3] private tokenSupplies = [0, 0, 0];
 
+    // @dev Set the maximum number of tokens that can be minted in a single transaction
+    uint256[3] public maxMintAmountPerTx = [100, 100, 100];
+
+    // @dev Set the maximum number of tokens that can be minted by a single address
+    uint256[3] public maxMintAmountPerAddress = [10, 10, 10];
+
+    // @dev Keep track of the number of tokens that have been minted by each address
+    mapping(address => mapping(uint256 => uint256)) private addressMintAmount;
+
     // @dev Set the team wallet address
     address public constant TEAM_WALLET = 0x0000000000000000000000000000000000000000;
 
@@ -58,6 +74,12 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
     // @dev Event that is emitted when the base URI for token metadata is changed
     event BaseURIChanged(string newBaseURI);
 
+    // @dev Event emitted when the maximum number of tokens that can be minted in a single transaction is changed
+    event MaxMintAmountPerTxChanged(uint256 tokenId, uint256 amount);
+
+    // @dev Event emitted when the maximum number of tokens that can be minted by a single address is changed
+    event MaxMintAmountPerAddressChanged(uint256 tokenId, uint256 amount);
+
     // @dev Event to notify when the mint price is updated
     event MintPriceUpdated(uint256 tokenId, uint256 price);
 
@@ -68,7 +90,18 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
     event Withdrawn(uint256 amount, address teamWallet, address communityWallet, address owner);
 
     // @dev Constructor that initializes the contract
-    constructor() ERC1155(CONSTRUCTOR_URI) {}
+    constructor(address minter) ERC1155(CONSTRUCTOR_URI) {
+      _setRoleAdmin(ADMIN, ADMIN);
+      _setRoleAdmin(MINTER, ADMIN);
+      
+      _grantRole(ADMIN, msg.sender);
+      _grantRole(MINTER, minter);
+    }
+    
+    // @dev Override the supportsInterface function to ensure that the contract properly implements the required ERC1155 and AccessControl interfaces
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool){
+        return super.supportsInterface(interfaceId);
+    }
 
     // @dev Override the uri function to return the URI for a specific token ID
     function uri(uint256 tokenId) public view virtual override returns (string memory) {
@@ -85,6 +118,8 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
 
     // @dev Function to mint NFTs
     function mint(uint256 tokenId, uint256 amount) public payable {
+        require(hasRole(ADMIN, msg.sender) || hasRole(MINTER, msg.sender), "Only administrators and authorized minters are allowed to mint tokens");
+
         // Ensure that the tokenId is within the valid range
         require(tokenId > 0 && tokenId <= maxSupplies.length, "Token doesn't exist");
 
@@ -102,8 +137,18 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
         uint256 currentSupply = tokenSupplies[currentTokenId];
         require(currentSupply + amount <= maxSupplies[currentTokenId], "Max supply limit exceeded");
 
+        // @dev Ensure that the maximum number of tokens that can be minted in a single transaction is not exceeded
+        require(amount <= maxMintAmountPerTx[currentTokenId], "Max mint amount per transaction exceeded");
+
+        // @dev Ensure that the maximum number of tokens that can be minted by a single address is not exceeded
+        uint256 currentAddressMintAmount = addressMintAmount[msg.sender][currentTokenId];
+        require(currentAddressMintAmount + amount <= maxMintAmountPerAddress[currentTokenId], "Max mint amount per address exceeded");
+
         // @dev Emit the NFTMinted event
         emit NFTMinted(tokenId, msg.sender, amount);
+
+        // @dev Increment the number of tokens that have been minted by the address
+        addressMintAmount[msg.sender][currentTokenId]++;
 
         // @dev Mint the specified number of NFTs
         tokenSupplies[currentTokenId]++;
@@ -111,7 +156,9 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
     }
 
     // @dev Function to withdraw the contract balance
-    function withdraw() public payable onlyOwner {
+    function withdraw() public payable {
+        require(hasRole(ADMIN, msg.sender), "Only administrators are allowed to withdraw");
+
         // @dev Get the current contract balance and ensure that it is greater than 0
         uint256 balance = address(this).balance;
         require(balance > 0, "Not enough balance");
@@ -132,7 +179,9 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
     }
 
     // @dev Function to set the minting enabled status
-    function setMintingEnabled(uint256 tokenId, bool enabled) public onlyOwner {
+    function setMintingEnabled(uint256 tokenId, bool enabled) public {
+        require(hasRole(ADMIN, msg.sender), "Only administrators are allowed to set minting enabled or disabled");
+
         // Ensure that the tokenId is within the valid range
         require(tokenId > 0 && tokenId <= maxSupplies.length, "Token doesn't exist");
 
@@ -145,21 +194,57 @@ contract ERC1155BasicReveal is ERC1155, Ownable {
     }
 
     // @dev Function to reveal or hide the NFTs
-    function setNFTVisibility(bool revealed) public onlyOwner {
+    function setNFTVisibility(bool revealed) public {
+        require(hasRole(ADMIN, msg.sender), "Only administrators are allowed to set NFTs revealed or hidden");
+
         nftsRevealed = revealed;
         
         emit NFTVisibilityChanged(revealed);
     }
 
     // @dev Function to set the base URI for token metadata
-    function setBaseURI(string memory newBaseURI) public onlyOwner {
+    function setBaseURI(string memory newBaseURI) public {
+        require(hasRole(ADMIN, msg.sender), "Only administrators are allowed to set base URI");
+
         baseURI = newBaseURI;
         
         emit BaseURIChanged(newBaseURI);
     }
 
+    // @dev Function to set the maximum number of tokens that can be minted in a single transaction
+    function setMaxMintAmountPerTx(uint256 tokenId, uint256 amount) public {
+        require(hasRole(ADMIN, msg.sender), "Only administrators are allowed to set max mint amount per transaction");
+
+        // Ensure that the tokenId is within the valid range
+        require(tokenId > 0 && tokenId <= maxSupplies.length, "Token doesn't exist");
+
+        // Subtract 1 from the tokenId to convert it to the index in the maxSupplies array
+        uint256 currentTokenId = tokenId - 1;
+
+        maxMintAmountPerTx[currentTokenId] = amount;
+
+        emit MaxMintAmountPerTxChanged(tokenId, amount);
+    }
+
+    // @dev Function to set the maximum number of tokens that can be minted by a single address
+    function setMaxMintAmountPerAddress(uint256 tokenId, uint256 amount) public {
+        require(hasRole(ADMIN, msg.sender), "Only administrators are allowed to set max mint amount per address");
+
+        // Ensure that the tokenId is within the valid range
+        require(tokenId > 0 && tokenId <= maxSupplies.length, "Token doesn't exist");
+
+        // Subtract 1 from the tokenId to convert it to the index in the maxSupplies array
+        uint256 currentTokenId = tokenId - 1;
+
+        maxMintAmountPerAddress[currentTokenId] = amount;
+
+        emit MaxMintAmountPerAddressChanged(tokenId, amount);
+    }
+
     // @dev Function to set the mint price
-    function setMintPrice(uint256 tokenId, uint256 price) public onlyOwner {
+    function setMintPrice(uint256 tokenId, uint256 price) public {
+        require(hasRole(ADMIN, msg.sender), "Only administrators are allowed to set mint price");
+
         // Ensure that the tokenId is within the valid range
         require(tokenId > 0 && tokenId <= maxSupplies.length, "Token doesn't exist");
 
