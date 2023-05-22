@@ -18,7 +18,7 @@ interface IRoyaltyFeePool {
     function deposit(address sender, uint256 amount) external;
 }
 
-contract SwapBasicRoles is AccessControl {
+contract SwapAdvanced is AccessControl {
     // @dev Declare a constant variable for the admin role using the keccak256 hash function
     bytes32 public constant ADMIN = keccak256("ADMIN");
 
