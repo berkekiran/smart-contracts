@@ -8,36 +8,33 @@ pragma solidity 0.8.18;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract PoolAdvanced is AccessControl {
+contract SwapPool is AccessControl {
     // @dev Declare a constant variable for the admin role using the keccak256 hash function
     bytes32 public constant ADMIN = keccak256("ADMIN");
 
-    // @dev Declare a constant variable for the stake contract role using the keccak256 hash function
-    bytes32 public constant STAKECONTRACT = keccak256("STAKECONTRACT");
+    // @dev Declare a constant variable for the swap contract role using the keccak256 hash function
+    bytes32 public constant SWAPCONTRACT = keccak256("SWAPCONTRACT");
+
+    // @dev Set the pool balances
+    mapping (address => uint256) public poolBalances;
 
     // @dev Enable/disable depositing
     bool public depositingEnabled = false;
 
-    // @dev Enable/disable claiming
-    bool public claimingEnabled = false;
-
-    // @dev Set the pool balance
-    uint256 public poolBalance;
-
-    // @dev Token contract interface
-    IERC20 immutable private token;
+    // @dev Enable/disable withdrawing
+    bool public withdrawingEnabled = false;
 
     // @dev Event emitted when depositing is enabled or disabled
     event DepositingEnabled(bool enabled);
 
-    // @dev Event emitted when claiming is enabled or disabled
-    event ClaimingEnabled(bool enabled);
+    // @dev Event emitted when withdrawing is enabled or disabled
+    event WithdrawingEnabled(bool enabled);
 
     // @dev Event emitted when tokens are deposited into the pool
-    event Deposited(address indexed depositor, uint256 amount, uint256 poolBalance);
+    event Deposited(address indexed token, address indexed depositor, uint256 amount, uint256 poolBalance);
 
-    // @dev Event emitted when reward tokens are claimed from the pool
-    event RewardClaimed(address indexed receiver, uint256 date, uint256 amount, uint256 poolBalance);
+    // @dev Event emitted when tokens are withdrawn from the pool
+    event Withdrawn(address indexed token, address indexed receiver, uint256 amount, uint256 poolBalance);
 
     // @dev Event emitted when tokens are withdrawn
     event TokensWithdrawn(address indexed token, address indexed receiver, uint256 amount);
@@ -52,66 +49,67 @@ contract PoolAdvanced is AccessControl {
     fallback() external payable {}
 
     // @dev Constructor function that sets the token contract for the pool
-    constructor(IERC20 tokenContract) {
+    constructor() {
         _setRoleAdmin(ADMIN, ADMIN);
-        _setRoleAdmin(STAKECONTRACT, ADMIN);
+        _setRoleAdmin(SWAPCONTRACT, ADMIN);
         
         _grantRole(ADMIN, msg.sender);
-        
-        token = tokenContract;
     }
 
     // @dev Function to deposit tokens into the pool
-    function deposit(uint256 amount) public {
-        require(hasRole(ADMIN, msg.sender), "Only administrators are allowed to deposit tokens");
+    function deposit(IERC20 tokenToDeposit, uint256 amount) public {
+        require(hasRole(ADMIN, msg.sender), "Only administrators and authorized servers are allowed to deposit tokens");
 
         // @dev Check if depositing is enabled
         require(depositingEnabled, "Depositing is currently disabled");
+
+        // @dev Check if the token address is not the zero address
+        require(address(tokenToDeposit) != address(0), "Token address cannot be the zero address");
 
         // @dev Check if the deposit amount is greater than zero
         require(amount > 0, "Deposit amount must be greater than zero");
         
         // @dev Check if the depositor has sufficient tokens
-        uint256 balance = token.balanceOf(msg.sender); 
+        uint256 balance = tokenToDeposit.balanceOf(msg.sender); 
         require(balance >= amount, "Token balance is insufficient for the desired deposit");
 
         // @dev Increase the pool balance by the deposited amount
-        poolBalance += amount;
+        poolBalances[address(tokenToDeposit)] += amount;
 
         // @dev Emit an event indicating the tokens have been deposited
-        emit Deposited(msg.sender, amount, poolBalance);
+        emit Deposited(address(tokenToDeposit), msg.sender, amount, poolBalances[address(tokenToDeposit)]);
 
         // @dev Transfer the tokens from the depositor to the pool
-        bool success = token.transferFrom(msg.sender, address(this), amount);
+        bool success = tokenToDeposit.transferFrom(msg.sender, address(this), amount);
         require(success, "Deposit failed");
     }
 
     // @dev Function to claim reward tokens from the pool
-    function claimReward(address receiver, uint256 amount) public {
-        require(hasRole(ADMIN, msg.sender) || hasRole(STAKECONTRACT, msg.sender), "Only administrators and authorized stake contracts are allowed to claim reward tokens");
+    function withdraw(IERC20 tokenToWithdraw, address receiver, uint256 amount) external {
+        require(hasRole(ADMIN, msg.sender) || hasRole(SWAPCONTRACT, msg.sender), "Only administrators, authorized swap contracts are allowed to withdraw token from swap pool");
 
-        // @dev Check if claiming is enabled
-        require(claimingEnabled, "Claiming is currently disabled");
-    
+        // @dev Check if withdrawing is enabled
+        require(withdrawingEnabled, "Withdrawing is currently disabled");
+
         // @dev Check if the receiver address is not the zero address
-        require(receiver != address(0), "Claim address cannot be the zero address");
+        require(address(tokenToWithdraw) != address(0), "Token address cannot be the zero address");
 
-        // @dev Check if the claim amount is greater than zero
-        require(amount > 0, "Claim amount must be greater than zero");
-
-        // @dev Check if there are sufficient tokens in the pool and pool balance to perform the claiming
-        uint256 balance = token.balanceOf(address(this)); 
-        require(balance >= amount && poolBalance >= amount, "Insufficient tokens to claim");
+        // @dev Check if the withdraw amount is greater than zero
+        require(amount > 0, "Withdraw amount must be greater than zero");
+        
+        // @dev Check if there are sufficient tokens in the pool and pool balance to perform the withdrawing
+        uint256 balance = tokenToWithdraw.balanceOf(address(this)); 
+        require(balance >= amount && poolBalances[address(tokenToWithdraw)] >= amount, "Insufficient tokens to withdraw");
 
         // @dev Decrease the pool balance by the claimed amount
-        poolBalance -= amount;
-
-        // @dev Emit an event indicating the reward tokens have been claimed
-        emit RewardClaimed(receiver, block.timestamp, amount, poolBalance);
+        poolBalances[address(tokenToWithdraw)] -= amount;
+            
+        // @dev Emit an event indicating the reward tokens have been withdrawn
+        emit Withdrawn(address(tokenToWithdraw), msg.sender, block.timestamp, amount);
 
         // @dev Transfer the tokens from the pool to the receiver
-        bool success = token.transfer(receiver, amount);
-        require(success, "Claim failed");
+        bool success = tokenToWithdraw.transfer(receiver, amount);
+        require(success, "Withdraw failed");
     }
 
     // @dev Function to withdraw native tokens (e.g., Ether) from the contract
@@ -140,10 +138,6 @@ contract PoolAdvanced is AccessControl {
         // @dev Ensure that there are tokens available to withdraw
         uint256 balance = tokenToWithdraw.balanceOf(address(this)); 
         require(balance > 0, "Insufficient tokens to withdraw");
-        
-        if(address(tokenToWithdraw) == address(token)) {
-            poolBalance = 0;
-        }
 
         // @dev Emit an event indicating the withdrawal of tokens
         emit TokensWithdrawn(address(tokenToWithdraw), msg.sender, balance);
@@ -162,12 +156,12 @@ contract PoolAdvanced is AccessControl {
         emit DepositingEnabled(enabled);
     }
     
-    // @dev Function to enable or disable claiming
-    function setClaimingEnabled(bool enabled) public {
-        require(hasRole(ADMIN, msg.sender), "Only administrators are allowed to set claiming enabled or disabled");
+    // @dev Function to enable or disable withdrawing
+    function setWithdrawingEnabled(bool enabled) public {
+        require(hasRole(ADMIN, msg.sender), "Only administrators are allowed to set withdrawing enabled or disabled");
 
-        claimingEnabled = enabled;
+        withdrawingEnabled = enabled;
         
-        emit ClaimingEnabled(enabled);
+        emit WithdrawingEnabled(enabled);
     }
 }

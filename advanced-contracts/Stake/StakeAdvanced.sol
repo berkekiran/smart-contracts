@@ -69,6 +69,12 @@ contract StakeAdvanced is AccessControl {
 
     // @dev Event emitted when native tokens (e.g., Ether) are withdrawn
     event NativeTokensWithdrawn(address indexed receiver, uint256 amount);
+
+    // @dev Function to receive Ether
+    receive() external payable {}
+
+    // @dev Function to receive Ether when no other function matches the called function signature
+    fallback() external payable {}
     
     // @dev Constructor function that sets the token contract, stake reward pool contract and initial interest rate for the pool
     constructor(IERC20 tokenContract, IStakeRewardPool stakeRewardPoolContract, uint256 initialInterestRate) {
