@@ -1,6 +1,6 @@
-# Smart Contracts Repository
+# Smart Contracts
 
-This repository contains a collection of smart contracts written in Solidity, a programming language used for implementing smart contracts on various blockchain platforms, especially Ethereum. The contracts are categorized into three main directories:
+This repository contains a collection of smart contracts written in Solidity by Berke Kiran, a programming language used for implementing smart contracts on various blockchain platforms, especially Ethereum. The contracts are categorized into three main directories:
 
 ## 1. Advanced Contracts
 
