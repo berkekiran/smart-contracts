@@ -1,4 +1,4 @@
-# Airdrop
+# Airdrop Contract
 
 The `Airdrop.sol` contract is designed to facilitate the airdropping of ERC20 tokens to a predefined list of addresses. The list of addresses is verified using a Merkle root, ensuring that only the intended recipients can claim the airdropped tokens. 
 

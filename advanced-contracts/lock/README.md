@@ -1,4 +1,4 @@
-# Lock
+# Lock Contract
 
 The `Lock.sol` contract is designed to facilitate the locking of ERC20 tokens for a predefined period of time. The contract provides role-based access control, allowing for specific addresses to have administrative roles. Administrators have the ability to enable or disable the locking, unlocking, and claiming of tokens.
 
