@@ -6,7 +6,7 @@ These contracts are robust solutions for projects looking to implement an ERC115
 
 ## ERC1155Basic.sol
 
-The `ERC1155Basic.sol` contract is a simpler version that allows for basic minting and burning of tokens. It maintains a balance of minted tokens, which tracks the total amount of tokens minted in the contract. The contract allows for minting of tokens by any address and burning of tokens by the token holder.
+The `ERC1155Basic.sol` contract is a simpler version that allows for basic minting of tokens. It maintains a balance of minted tokens, which tracks the total amount of tokens minted in the contract. The contract allows for minting of tokens by any address.
 
 ### Overview
 
@@ -15,7 +15,7 @@ The contract uses the OpenZeppelin contracts for `IERC1155` (an interface for ER
 The contract has several key features:
 
 - **Token Contract**: The contract interacts with an ERC1155 token contract, which is specified at the time of contract deployment.
-- **Minting and Burning**: The contract allows for minting of tokens by any address and burning of tokens by the token holder.
+- **Minting**: The contract allows for minting of tokens by any address.
 
 ## ERC1155BasicReveal.sol
 
@@ -28,12 +28,12 @@ The contract uses the OpenZeppelin contracts for `IERC1155` (an interface for ER
 The contract has several key features:
 
 - **Token Contract**: The contract interacts with an ERC1155 token contract, which is specified at the time of contract deployment.
-- **Minting and Burning**: The contract allows for minting of tokens by any address and burning of tokens by the token holder.
+- **Minting**: The contract allows for minting of tokens by any address.
 - **Reveal Mechanism**: The contract allows for the visibility of the NFTs to be changed.
 
 ## ERC1155Advanced.sol
 
-The `ERC1155Advanced.sol` contract extends the functionality of the basic ERC1155 contract by adding more complex features such as a whitelist mechanism, which tracks the addresses that are allowed to mint tokens. It also allows for minting of tokens by any address, and burning of tokens by the token holder.
+The `ERC1155Advanced.sol` contract extends the functionality of the basic ERC1155 contract by adding more complex features such as a whitelist mechanism, which tracks the addresses that are allowed to mint tokens. It also allows for minting of tokens by any address,.
 
 ### Overview
 
@@ -43,7 +43,7 @@ The contract has several key features:
 
 - **Roles**: The contract defines one role, `MINTER_ROLE`, which has permissions to perform certain actions such as minting tokens.
 - **Token Contract**: The contract interacts with an ERC1155 token contract, which is specified at the time of contract deployment.
-- **Minting and Burning**: The contract allows for minting of tokens by any address and burning of tokens by the token holder.
+- **Minting**: The contract allows for minting of tokens by any address.
 - **Whitelist**: The contract maintains a whitelist of addresses that are allowed to mint tokens.
 
 ## ERC1155AdvancedRoles.sol
@@ -58,7 +58,7 @@ The contract has several key features:
 
 - **Roles**: The contract defines one role, `MINTER_ROLE`, which has permissions to perform certain actions such as minting tokens.
 - **Token Contract**: The contract interacts with an ERC1155 token contract, which is specified at the time of contract deployment.
-- **Minting and Burning**: The contract allows for minting of tokens by any address and burning of tokens by the token holder.
+- **Minting**: The contract allows for minting of tokens by any address.
 
 ## ERC1155AdvancedWhitelist.sol
 
@@ -72,13 +72,13 @@ The contract has several key features:
 
 - **Roles**: The contract defines one role, `MINTER_ROLE`, which has permissions to perform certain actions such as minting tokens.
 - **Token Contract**: The contract interacts with an ERC1155 token contract, which is specified at the time of contract deployment.
-- **Minting and Burning**: The contract allows for minting of tokens by any address and burning of tokens by the token holder.
+- **Minting**: The contract allows for minting of tokens by any address.
 - **Whitelist**:The contract maintains a whitelist of addresses that are allowed to mint tokens.
 
 ## Usage
 
 To use these contracts, you would need to deploy them on the Ethereum network, specifying the token contract.
 
-Once deployed, any address can mint tokens. The token holder can burn their tokens. Administrators can enable or disable minting, set the minting price, and change the visibility of the NFTs.
+Once deployed, any address can mint tokens. Administrators can enable or disable minting, set the minting price, and change the visibility of the NFTs.
 
 Please note that these contracts should be used as a reference and should be thoroughly tested and audited before use in a production environment.
