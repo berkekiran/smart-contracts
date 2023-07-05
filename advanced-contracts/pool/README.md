@@ -1,6 +1,6 @@
 # Pool Contracts
 
-This directory contains three contracts: `PoolAdvanced.sol`, `PoolBasic.sol`, and `PoolBasicRoles.sol`. These contracts are designed to facilitate the creation and management of a pool of ERC20 tokens. They provide role-based access control, allowing for specific addresses to have administrative or depositor roles. Administrators have the ability to enable or disable the depositing and withdrawing of tokens, and to withdraw tokens from the contract. Depositors are allowed to deposit tokens into the pool.
+This directory contains three contracts: `PoolBasic.sol`, `PoolBasicRoles.sol` and `PoolAdvanced.sol`. These contracts are designed to facilitate the creation and management of a pool of ERC20 tokens. They provide role-based access control, allowing for specific addresses to have administrative or depositor roles. Administrators have the ability to enable or disable the depositing and withdrawing of tokens, and to withdraw tokens from the contract. Depositors are allowed to deposit tokens into the pool.
 
 These contracts are robust solutions for projects looking to create a token pool in an efficient and secure manner. However, they should be thoroughly tested and audited before use in a production environment.
 

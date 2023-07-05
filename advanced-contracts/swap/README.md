@@ -1,6 +1,6 @@
 # Swap Contracts
 
-This directory contains four contracts: `SwapAdvanced.sol`, `SwapBasic.sol`, `SwapBasicRoles.sol`, and `SwapPool.sol`. These contracts are designed to facilitate the swapping of ERC20 tokens. They provide role-based access control, allowing for specific addresses to have administrative roles. Administrators have the ability to enable or disable the swapping of tokens, and to set the swap rate.
+This directory contains four contracts: `SwapBasic.sol`, `SwapBasicRoles.sol`, `SwapAdvanced.sol` and `SwapPool.sol`. These contracts are designed to facilitate the swapping of ERC20 tokens. They provide role-based access control, allowing for specific addresses to have administrative roles. Administrators have the ability to enable or disable the swapping of tokens, and to set the swap rate.
 
 These contracts are robust solutions for projects looking to implement a swapping mechanism in an efficient and secure manner. However, they should be thoroughly tested and audited before use in a production environment.
 

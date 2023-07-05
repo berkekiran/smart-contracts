@@ -1,6 +1,6 @@
 # Stake Contracts
 
-This directory contains four contracts: `StakeAdvanced.sol`, `StakeBasic.sol`, `StakeBasicRoles.sol`, and `StakeRewardPool.sol`. These contracts are designed to facilitate the staking of ERC20 tokens. They provide role-based access control, allowing for specific addresses to have administrative roles. Administrators have the ability to enable or disable the staking of tokens, and to set the interest rate for staking rewards.
+This directory contains four contracts: `StakeBasic.sol`, `StakeBasicRoles.sol`, `StakeAdvanced.sol` and `StakeRewardPool.sol`. These contracts are designed to facilitate the staking of ERC20 tokens. They provide role-based access control, allowing for specific addresses to have administrative roles. Administrators have the ability to enable or disable the staking of tokens, and to set the interest rate for staking rewards.
 
 These contracts are robust solutions for projects looking to implement a staking mechanism in an efficient and secure manner. However, they should be thoroughly tested and audited before use in a production environment.
 

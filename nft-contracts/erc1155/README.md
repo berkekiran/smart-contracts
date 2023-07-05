@@ -1,6 +1,6 @@
 # ERC1155 Contracts
 
-This directory contains five contracts: `ERC1155Advanced.sol`, `ERC1155AdvancedRoles.sol`, `ERC1155AdvancedWhitelist.sol`, `ERC1155Basic.sol`, and `ERC1155BasicReveal.sol`. These contracts are designed to facilitate the creation and management of ERC1155 tokens. They provide role-based access control, allowing for specific addresses to have administrative roles. Administrators have the ability to enable or disable the minting of tokens, and to set the minting price.
+This directory contains five contracts: `ERC1155Basic.sol`, `ERC1155BasicReveal.sol`, `ERC1155Advanced.sol`, `ERC1155AdvancedRoles.sol` and `ERC1155AdvancedWhitelist.sol`. These contracts are designed to facilitate the creation and management of ERC1155 tokens. They provide role-based access control, allowing for specific addresses to have administrative roles. Administrators have the ability to enable or disable the minting of tokens, and to set the minting price.
 
 These contracts are robust solutions for projects looking to implement an ERC1155 token mechanism in an efficient and secure manner. However, they should be thoroughly tested and audited before use in a production environment.
 
