@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.18;
 
-// @dev: Berke Kiran - berkekiran.com - twitter.com/berkekiraneth
+// @dev: Berke Kiran - berkekiran.com
 
 // @dev Import ERC721, Counters, Ownable, and Strings from OpenZeppelin contracts
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";

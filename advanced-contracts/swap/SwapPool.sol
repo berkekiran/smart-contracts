@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.18;
 
-// @dev: Berke Kiran - berkekiran.com - twitter.com/berkekiraneth
+// @dev: Berke Kiran - berkekiran.com
 
 // @dev Import IERC20 and AccessControl from OpenZeppelin contracts
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
