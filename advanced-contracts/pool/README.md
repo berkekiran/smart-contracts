@@ -4,22 +4,6 @@ This directory contains three contracts: `PoolAdvanced.sol`, `PoolBasic.sol`, an
 
 These contracts are robust solutions for projects looking to create a token pool in an efficient and secure manner. However, they should be thoroughly tested and audited before use in a production environment.
 
-## PoolAdvanced.sol
-
-The `PoolAdvanced.sol` contract extends the functionality of the basic pool contract by adding more complex features such as a locking pool, which tracks the total amount of tokens locked, the balance of tokens in the pool, and the amount of tokens locked per address. It also allows for locking of tokens by administrators, unlocking of tokens by administrators, and claiming of tokens by the addresses for which tokens have been locked.
-
-### Overview
-
-The contract uses the OpenZeppelin contracts for `IERC20` (an interface for ERC20 tokens) and `AccessControl` (for role-based access control).
-
-The contract has several key features:
-
-- **Roles**: The contract defines two roles, `ADMIN` and `DEPOSITOR`, which have permissions to perform certain actions such as depositing tokens and enabling/disabling depositing and withdrawing.
-- **Token Contract**: The contract interacts with an ERC20 token contract, which is specified at the time of contract deployment.
-- **Locking Pool**: The contract maintains a locking pool, which tracks the total amount of tokens locked, the balance of tokens in the pool, and the amount of tokens locked per address.
-- **Locking, Unlocking, and Claiming**: The contract allows for locking of tokens by administrators, unlocking of tokens by administrators, and claiming of tokens by the addresses for which tokens have been locked.
-- **Withdrawal**: The contract allows for withdrawal of tokens and native tokens (e.g., Ether) from the contract by administrators.
-
 ## PoolBasic.sol
 
 The `PoolBasic.sol` contract is a simpler version that allows for basic depositing and withdrawing of tokens from the pool. It maintains a pool balance, which tracks the total amount of tokens in the pool. The contract allows for depositing of tokens into the pool and withdrawing of tokens from the pool.
@@ -50,6 +34,22 @@ The contract has several key features:
 - **Token Contract**: The contract interacts with an ERC20 token contract, which is specified at the time of contract deployment.
 - **Pool Balance**: The contract maintains a pool balance, which tracks the total amount of tokens in the pool.
 - **Depositing and Withdrawing**: The contract allows for depositing of tokens into the pool by administrators and authorized depositors, and withdrawing of tokens from the pool by administrators.
+- **Withdrawal**: The contract allows for withdrawal of tokens and native tokens (e.g., Ether) from the contract by administrators.
+
+## PoolAdvanced.sol
+
+The `PoolAdvanced.sol` contract extends the functionality of the basic pool contract by adding more complex features such as a locking pool, which tracks the total amount of tokens locked, the balance of tokens in the pool, and the amount of tokens locked per address. It also allows for locking of tokens by administrators, unlocking of tokens by administrators, and claiming of tokens by the addresses for which tokens have been locked.
+
+### Overview
+
+The contract uses the OpenZeppelin contracts for `IERC20` (an interface for ERC20 tokens) and `AccessControl` (for role-based access control).
+
+The contract has several key features:
+
+- **Roles**: The contract defines two roles, `ADMIN` and `DEPOSITOR`, which have permissions to perform certain actions such as depositing tokens and enabling/disabling depositing and withdrawing.
+- **Token Contract**: The contract interacts with an ERC20 token contract, which is specified at the time of contract deployment.
+- **Locking Pool**: The contract maintains a locking pool, which tracks the total amount of tokens locked, the balance of tokens in the pool, and the amount of tokens locked per address.
+- **Locking, Unlocking, and Claiming**: The contract allows for locking of tokens by administrators, unlocking of tokens by administrators, and claiming of tokens by the addresses for which tokens have been locked.
 - **Withdrawal**: The contract allows for withdrawal of tokens and native tokens (e.g., Ether) from the contract by administrators.
 
 ## Usage
