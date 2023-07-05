@@ -1,8 +1,21 @@
 # ERC20 Contracts
 
-This directory contains three contracts: `ERC20BasicRoles.sol`, `ERC20Basic.sol` and `ERC20Advanced.sol`. These contracts are designed to facilitate the creation and management of ERC20 tokens. They provide role-based access control and minting mechanisms.
+This directory contains three contracts: `ERC20Basic.sol`, `ERC20BasicRoles.sol` and `ERC20Advanced.sol`. These contracts are designed to facilitate the creation and management of ERC20 tokens. They provide role-based access control and minting mechanisms.
 
 These contracts are robust solutions for projects looking to implement a token mechanism in an efficient and secure manner. However, they should be thoroughly tested and audited before use in a production environment.
+
+## ERC20Basic.sol
+
+The `ERC20Basic.sol` contract is a simpler version that allows for basic minting of tokens. It maintains a token counter to keep track of the total supply of tokens. The contract allows for minting of tokens by any address, with checks for minting status, minting price, and maximum supply.
+
+### Overview
+
+The contract uses the OpenZeppelin contracts for `ERC20` (an interface for ERC20 tokens) and `Ownable` (for basic access control).
+
+The contract has several key features:
+
+- **Token Contract**: The contract interacts with an ERC20 token contract, which is specified at the time of contract deployment.
+- **Token Minting**: The contract allows for minting of tokens by any address, with checks for minting status, minting price, and maximum supply.
 
 ## ERC20BasicRoles.sol
 
@@ -15,19 +28,6 @@ The contract uses the OpenZeppelin contracts for `ERC20` (an interface for ERC20
 The contract has several key features:
 
 - **Roles**: The contract defines two roles, `ADMIN` and `MINTER`, which have permissions to perform certain actions.
-- **Token Contract**: The contract interacts with an ERC20 token contract, which is specified at the time of contract deployment.
-- **Token Minting**: The contract allows for minting of tokens by any address, with checks for minting status, minting price, and maximum supply.
-
-## ERC20Basic.sol
-
-The `ERC20Basic.sol` contract is a simpler version that allows for basic minting of tokens. It maintains a token counter to keep track of the total supply of tokens. The contract allows for minting of tokens by any address, with checks for minting status, minting price, and maximum supply.
-
-### Overview
-
-The contract uses the OpenZeppelin contracts for `ERC20` (an interface for ERC20 tokens) and `Ownable` (for basic access control).
-
-The contract has several key features:
-
 - **Token Contract**: The contract interacts with an ERC20 token contract, which is specified at the time of contract deployment.
 - **Token Minting**: The contract allows for minting of tokens by any address, with checks for minting status, minting price, and maximum supply.
 
